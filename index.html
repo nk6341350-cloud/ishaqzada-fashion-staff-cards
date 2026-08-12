@@ -52,11 +52,26 @@ body.exporting .logoBox img,body.exporting .backTop img{
 .row span .rtlPart{direction:rtl;unicode-bidi:isolate;display:inline-block}
 .row span .ltrPart{direction:ltr;unicode-bidi:isolate;display:inline-block}
 
-/* Final JPG/iPhone export fix — visible design unchanged. */
-body.exporting .logoBox,body.exporting .logoBox img,body.exporting .backTop,body.exporting .backTop img,
-body.exporting .row,body.exporting .row span{transform:none!important;-webkit-transform:none!important}
-body.exporting .row{direction:rtl!important}
-body.exporting .row span{unicode-bidi:plaintext!important;text-align:right!important}
+
+/* iPhone Pashto export fix: never split Pashto into separate directional fragments. */
+.row span{
+  direction:rtl;
+  unicode-bidi:plaintext;
+  text-align:right;
+  transform:none!important;
+  -webkit-transform:none!important;
+}
+body.exporting .row span{
+  direction:rtl!important;
+  unicode-bidi:plaintext!important;
+  text-align:right!important;
+  transform:none!important;
+  -webkit-transform:none!important;
+}
+body.exporting .logoBox img,body.exporting .backTop img{
+  transform:none!important;
+  -webkit-transform:none!important;
+}
 
 @media print{body{background:#fff}.top,.panel{display:none!important}.wrap{max-width:none;padding:0}.cards{gap:4mm}.card{width:85.60mm;height:53.98mm;box-shadow:none}}
 </style>
@@ -279,7 +294,13 @@ function bilingualHTML(text){
   const parts=t.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\s،؛]+|[A-Za-z0-9+().,\-\s]+|[^\s]+/g)||[t];
   return parts.map(part=>{const x=part.trim();if(!x)return '';const rtl=/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(x);return '<span class="'+(rtl?'rtlPart':'ltrPart')+'" dir="'+(rtl?'rtl':'ltr')+'">'+escapeValue(x)+'</span>'}).filter(Boolean).join(' ');
 }
-function setBi(id,text){$(id).innerHTML=bilingualHTML(text)}
+function setBi(id,text){
+  const el=$(id);
+  el.textContent=String(text||'').trim()||'—';
+  el.setAttribute('dir','auto');
+  el.style.unicodeBidi='plaintext';
+  el.style.textAlign='right';
+}
 function renderCard(){const r=ROLE[$('role').value];if(!val('staffId'))$('staffId').value=nextId();setBi('vName',val('name'));setBi('vFather',val('father'));setBi('vProvince',val('province'));setBi('vDistrict',val('district'));$('vPhone').textContent=val('phone')||'—';setBi('vAddress',val('address'));$('vStaff').textContent=val('staffId');$('backStaff').textContent='Staff ID: '+val('staffId');$('vRolePs').textContent=r.ps;$('vRoleEn').textContent=r.en;$('bRole').textContent=r.ps+' / '+r.en;
   const isGeneralResponsible = $('role').value === 'general-responsible';
   $('authPs').textContent = isGeneralResponsible
