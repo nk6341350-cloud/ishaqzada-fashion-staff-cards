@@ -102,7 +102,7 @@ body.exporting .logoBox img,body.exporting .backTop img{
 const $=id=>document.getElementById(id), val=id=>($(id).value||'').trim();
 const ROLE={'general-responsible':{ps:'عمومي مسئول',en:'General Responsible',prefix:'IFC-GR-'},'manager-1':{ps:'عمومي مدیر – لومړی دفتر',en:'General Manager – Branch 1',prefix:'IFC-GM1-'},'manager-2':{ps:'عمومي مدیر – دوهم دفتر',en:'General Manager – Branch 2',prefix:'IFC-GM2-'},'manager-3':{ps:'عمومي مدیر – درېیم دفتر',en:'General Manager – Branch 3',prefix:'IFC-GM3-'},'sales':{ps:'د آنلاین خرڅلاو کارمند',en:'Online Sales Employee',prefix:'IFC-SR-'}};
 function nextId(){const r=ROLE[$('role').value];const arr=JSON.parse(localStorage.getItem('ifcEmployees')||'[]');let n=1;while(arr.some(x=>x.staffId===r.prefix+String(n).padStart(3,'0')))n++;return r.prefix+String(n).padStart(3,'0')}
-function verificationUrl(){const q=new URLSearchParams({verify:'1',staff:val('staffId')});return location.origin+location.pathname+'?'+q.toString()}
+function verificationUrl(){const q=new URLSearchParams({verify:'1',name:val('name'),father:val('father'),province:val('province'),district:val('district'),phone:val('phone'),address:val('address'),staff:val('staffId'),role:$('role').value,issue:'12-08-2026',expiry:'12-08-2027'});return location.origin+location.pathname+'?'+q.toString()});return location.origin+location.pathname+'?'+q.toString()}
 function makeQR(url){const box=$('qr');box.innerHTML='';if(window.QRCode){new QRCode(box,{text:url,width:240,height:240,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.L})}else{box.innerHTML='<div style="color:#111;font-size:10px;direction:ltr">QR<br>VERIFY</div>'}}
 async function downloadOneCard(id,filename){
   renderCard();
