@@ -71,7 +71,7 @@ body.exporting .logoBox img,body.exporting .backTop img{
 <div><label>د تذکرې نمبر — یوازې اډمین / Tazkira No. (Admin only)<input id="tazkira" type="password" autocomplete="off"></label></div>
 <div><label>عکس / Photo<input id="photo" type="file" accept="image/*"></label></div>
 </div>
-<div class="toolbar"><button class="gold" onclick="renderCard()">کارډ تازه کړه / Update</button><button onclick="saveEmployee()">ثبت / Save</button><button onclick="window.print()">چاپ / Print</button><button class="gold" onclick="downloadFrontCard()">د مخ عکس / Download Front</button><button class="gold" onclick="downloadBackCard()">د شا عکس / Download Back</button><button class="light" onclick="newEmployee()">نوی کارکوونکی / New</button></div>
+<div class="toolbar"><button type="button" class="gold" onclick="renderCard()">کارډ تازه کړه / Update</button><button type="button" id="saveEmployeeBtn" onclick="saveEmployee()">ثبت / Save</button><button type="button" onclick="window.print()">چاپ / Print</button><button type="button" class="gold" onclick="downloadFrontCard()">د مخ عکس / Download Front</button><button type="button" class="gold" onclick="downloadBackCard()">د شا عکس / Download Back</button><button type="button" class="light" onclick="newEmployee()">نوی کارکوونکی / New</button></div>
 <p class="note">د تذکرې نمبر پر کارډ او QR کې نه ښکاري؛ یوازې په همدې براوزر کې د اډمین لپاره خوندي کېږي. د هر کارکوونکي Staff ID او QR جلا دی.</p>
 <div class="saved"><h3>ثبت شوي کارکوونکي / Saved Employees</h3><div id="savedList"></div></div>
 </div>
@@ -102,7 +102,7 @@ body.exporting .logoBox img,body.exporting .backTop img{
 const $=id=>document.getElementById(id), val=id=>($(id).value||'').trim();
 const ROLE={'general-responsible':{ps:'عمومي مسئول',en:'General Responsible',prefix:'IFC-GR-'},'manager-1':{ps:'عمومي مدیر – لومړی دفتر',en:'General Manager – Branch 1',prefix:'IFC-GM1-'},'manager-2':{ps:'عمومي مدیر – دوهم دفتر',en:'General Manager – Branch 2',prefix:'IFC-GM2-'},'manager-3':{ps:'عمومي مدیر – درېیم دفتر',en:'General Manager – Branch 3',prefix:'IFC-GM3-'},'sales':{ps:'د آنلاین خرڅلاو کارمند',en:'Online Sales Employee',prefix:'IFC-SR-'}};
 function nextId(){const r=ROLE[$('role').value];const arr=JSON.parse(localStorage.getItem('ifcEmployees')||'[]');let n=1;while(arr.some(x=>x.staffId===r.prefix+String(n).padStart(3,'0')))n++;return r.prefix+String(n).padStart(3,'0')}
-function verificationUrl(){const q=new URLSearchParams({verify:'1',name:val('name'),father:val('father'),province:val('province'),district:val('district'),phone:val('phone'),address:val('address'),staff:val('staffId'),role:$('role').value,issue:'12-08-2026',expiry:'12-08-2027'});return location.origin+location.pathname+'?'+q.toString()});return location.origin+location.pathname+'?'+q.toString()}
+function verificationUrl(){const q=new URLSearchParams({verify:'1',name:val('name'),father:val('father'),province:val('province'),district:val('district'),phone:val('phone'),address:val('address'),staff:val('staffId'),role:$('role').value,issue:'12-08-2026',expiry:'12-08-2027'});return location.origin+location.pathname+'?'+q.toString()}
 function makeQR(url){const box=$('qr');box.innerHTML='';if(window.QRCode){new QRCode(box,{text:url,width:240,height:240,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.L})}else{box.innerHTML='<div style="color:#111;font-size:10px;direction:ltr">QR<br>VERIFY</div>'}}
 async function downloadOneCard(id,filename){
   renderCard();
@@ -318,7 +318,29 @@ function renderCard(){const r=ROLE[$('role').value];if(!val('staffId'))$('staffI
     : 'The holder of this card is an authorized employee of Ishaqzada Fashion Company.';const d=$('salesDisclaimer');if(d)d.style.display=$('role').value==='general-responsible'?'none':'block';makeQR(verificationUrl())}
 $('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{$('photoPreview').src=rd.result;$('photoPreview').dataset.photo=rd.result};rd.readAsDataURL(f)});
 $('role').addEventListener('change',()=>{if($('role').value==='general-responsible'){$('name').value='نعمت خان اسحاقزاده / Nemat Khan Ishaqzada';$('phone').value='0700426319'}$('staffId').value=nextId();renderCard()});
-function saveEmployee(){if(!val('staffId'))$('staffId').value=nextId();let arr=JSON.parse(localStorage.getItem('ifcEmployees')||'[]');const obj={role:$('role').value,staffId:val('staffId'),name:val('name'),father:val('father'),province:val('province'),district:val('district'),phone:val('phone'),address:val('address'),tazkira:val('tazkira'),photo:$('photoPreview').dataset.photo||''};const i=arr.findIndex(x=>x.staffId===obj.staffId);if(i>=0)arr[i]=obj;else arr.push(obj);localStorage.setItem('ifcEmployees',JSON.stringify(arr));renderSaved();renderCard();alert('ثبت شو / Saved')}
+function saveEmployee(){
+try{
+if(!val('staffId'))$('staffId').value=nextId();
+renderCard();
+let arr=[];
+try{arr=JSON.parse(localStorage.getItem('ifcEmployees')||'[]')}catch(e){arr=[]}
+const obj={role:$('role').value,staffId:val('staffId'),name:val('name'),father:val('father'),province:val('province'),district:val('district'),phone:val('phone'),address:val('address'),tazkira:val('tazkira'),photo:$('photoPreview').dataset.photo||''};
+const i=arr.findIndex(x=>x.staffId===obj.staffId);
+if(i>=0)arr[i]=obj;else arr.push(obj);
+try{
+localStorage.setItem('ifcEmployees',JSON.stringify(arr));
+}catch(storageErr){
+/* If browser storage is full because of photos, keep all card data and omit old embedded photos. */
+const slim=arr.map((x,j)=>j===i||((i<0)&&(j===arr.length-1))?x:{...x,photo:''});
+localStorage.setItem('ifcEmployees',JSON.stringify(slim));
+}
+renderSaved();
+renderCard();
+alert('کارډ او معلومات ثبت شول / Card Saved');
+}catch(err){
+alert('ثبت کې ستونزه ده: '+(err&&err.message?err.message:err));
+}
+}
 function loadEmployee(sid){const arr=JSON.parse(localStorage.getItem('ifcEmployees')||'[]');const x=arr.find(a=>a.staffId===sid);if(!x)return;$('role').value=x.role;$('staffId').value=x.staffId;$('name').value=x.name;$('father').value=x.father;$('province').value=x.province;$('district').value=x.district;$('phone').value=x.phone;$('address').value=x.address;$('tazkira').value=x.tazkira||'';if(x.photo){$('photoPreview').src=x.photo;$('photoPreview').dataset.photo=x.photo}renderCard();scrollTo({top:0,behavior:'smooth'})}
 function removeEmployee(sid){if(!confirm('دا کارکوونکی حذف شي؟ / Delete this employee?'))return;let arr=JSON.parse(localStorage.getItem('ifcEmployees')||'[]').filter(x=>x.staffId!==sid);localStorage.setItem('ifcEmployees',JSON.stringify(arr));renderSaved()}
 function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function jsq(s){return String(s).replace(/'/g,"\'")}
